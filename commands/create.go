@@ -523,7 +523,7 @@ func updateUserdataFile(driverOpts *rpcdriver.RPCFlags, machineName, userdataFla
 
 	modifiedUserdataFile, err := ioutil.TempFile("", "modified-user-data")
 	if err != nil {
-		return fmt.Errorf("[updateUserdataFile] unable to created tempfile [%v]\nError returned\n[%v]", modifiedUserdataFile, err)
+		return fmt.Errorf("[updateUserdataFile] unable to create tempfile [%v]\nError returned\n[%v]", modifiedUserdataFile, err)
 	}
 	defer modifiedUserdataFile.Close()
 
@@ -551,8 +551,13 @@ func writeCloudConfig(machineName, encodedData, machineOS string, cf map[interfa
 		// set_hostname is a cloudbase-init specific cloud-config parameter
 		// that is only pertinent for windows VMs
 		// https://cloudbase-init.readthedocs.io/en/latest/userdata.html
-		if err := addToCloudConfig(cf, "set_hostname", machineName); err != nil {
-			log.Debugf("[writeCloudConfig] wrote set_hostname field for %s machine %s", machineName, machineOS)
+		if _, ok := cf["netbios_host_name_compatibility"]; !ok {
+			cf["netbios_host_name_compatibility"] = false
+			log.Debugf("[writeCloudConfig] wrote netbios_host_name_compatibility field for %s machine %s", machineName, machineOS)
+		}
+		err := addToCloudConfig(cf, "set_hostname", machineName)
+		log.Debugf("[writeCloudConfig] wrote set_hostname field for %s machine %s", machineName, machineOS)
+		if err != nil {
 			return err
 		}
 	} else {

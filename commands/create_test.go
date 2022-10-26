@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"io/ioutil"
 	"testing"
 
 	"flag"
@@ -8,6 +9,7 @@ import (
 	"github.com/rancher/machine/commands/commandstest"
 	"github.com/rancher/machine/libmachine/mcnflag"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateSwarmDiscoveryErrorsGivenInvalidURL(t *testing.T) {
@@ -117,4 +119,21 @@ func TestGetDriverOpts(t *testing.T) {
 		assert.Equal(t, tt.expected["stringslice"], driverOpts.StringSlice("stringslice"))
 		assert.Equal(t, tt.expected["stringslice_defaulted"], driverOpts.StringSlice("stringslice_defaulted"))
 	}
+}
+
+func TestDisableNetBIOSCompatibility(t *testing.T) {
+	file, err := ioutil.TempFile(t.TempDir(), "user_data_file")
+	require.NoError(t, err)
+
+	cf := map[interface{}]interface{}{}
+	err = writeCloudConfig("thisisalongmachinename", "", "windows", cf, file)
+	assert.Nil(t, err)
+	assert.Contains(t, cf, "netbios_host_name_compatibility")
+	assert.Equal(t, cf["netbios_host_name_compatibility"], false)
+
+	cf["netbios_host_name_compatibility"] = true
+	err = writeCloudConfig("thisisalongmachinename", "", "windows", cf, file)
+	assert.Nil(t, err)
+	assert.Contains(t, cf, "netbios_host_name_compatibility")
+	assert.Equal(t, cf["netbios_host_name_compatibility"], true)
 }
